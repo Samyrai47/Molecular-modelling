@@ -7,7 +7,8 @@
   "molecule" : {
     "mass" : 3.35e-27,
     "numberOfAtoms" : 2,
-    "degreesOfFreedom" : 5
+    "degreesOfFreedom" : 5,
+    "diameter" : 2.7E-10
   },
   "simulation" : {
     "numberOfMolecules" : 50,

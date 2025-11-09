@@ -11,17 +11,25 @@ import org.mipt.entity.SimulationConfig;
 public class Main extends ApplicationAdapter {
   private Physics physics;
 
+  private Molecule molecules[];
+
   @Override
   public void create() {
     Gson gson = new Gson();
     FileHandle file = Gdx.files.internal("config/simulation.json");
     SimulationConfig config = gson.fromJson(file.reader(), SimulationConfig.class);
+    molecules = new Molecule[config.simulation.numberOfMolecules()];
+
+    physics = new Physics(config, molecules);
+    physics.fillGrid();
 
     Molecule hydrogenMolecule = new Molecule(config.molecule, 0, 0, new Vector2(0, 0));
   }
 
   @Override
-  public void render() {}
+  public void render() {
+    physics.updateGrid();
+  }
 
   @Override
   public void dispose() {}
