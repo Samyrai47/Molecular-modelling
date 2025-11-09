@@ -2,26 +2,27 @@ package org.mipt;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.math.Vector2;
+import com.google.gson.Gson;
 import org.mipt.entity.Molecule;
+import org.mipt.entity.SimulationConfig;
 
 public class Main extends ApplicationAdapter {
-    private Physics physics;
+  private Physics physics;
 
-    @Override
-    public void create() {
-        Molecule hydrogenMolecule = new Molecule(3.35E-27, 2, 5, 0, 0, new Vector3(0, 0, 0));
-    }
+  @Override
+  public void create() {
+    Gson gson = new Gson();
+    FileHandle file = Gdx.files.internal("config/simulation.json");
+    SimulationConfig config = gson.fromJson(file.reader(), SimulationConfig.class);
 
-    @Override
-    public void render() {
-    }
+    Molecule hydrogenMolecule = new Molecule(config.molecule, 0, 0, new Vector2(0, 0));
+  }
 
-    @Override
-    public void dispose() {
-    }
+  @Override
+  public void render() {}
+
+  @Override
+  public void dispose() {}
 }
