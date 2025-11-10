@@ -8,7 +8,7 @@ public class Molecule {
   private int numberOfAtoms;
   private int degreesOfFreedom;
   private double diameter;
-  private float velocity;
+  private Vector2 velocity;
   private float kineticEnergy;
   private Vector2 position;
 
@@ -19,7 +19,7 @@ public class Molecule {
       int numberOfAtoms,
       int degreesOfFreedom,
       double diameter,
-      float velocity,
+      Vector2 velocity,
       float kineticEnergy,
       Vector2 position) {
     this.mass = mass;
@@ -31,7 +31,7 @@ public class Molecule {
     this.position = position;
   }
 
-  public Molecule(MoleculeData data, float velocity, float kineticEnergy, Vector2 position) {
+  public Molecule(MoleculeData data, Vector2 velocity, float kineticEnergy, Vector2 position) {
     this.mass = data.mass();
     this.numberOfAtoms = data.numberOfAtoms();
     this.degreesOfFreedom = data.degreesOfFreedom();
@@ -57,7 +57,7 @@ public class Molecule {
     return diameter;
   }
 
-  public float getVelocity() {
+  public Vector2 getVelocity() {
     return velocity;
   }
 
@@ -67,5 +67,9 @@ public class Molecule {
 
   public Vector2 getPosition() {
     return position;
+  }
+
+  public void setPosition(Vector2 position) {
+      this.position = position;
   }
 }

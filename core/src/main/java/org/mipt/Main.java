@@ -2,35 +2,187 @@ package org.mipt;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.viewport.FillViewport;
 import com.google.gson.Gson;
 import org.mipt.entity.Molecule;
 import org.mipt.entity.SimulationConfig;
 
+import java.util.Random;
+
 public class Main extends ApplicationAdapter {
   private Physics physics;
 
-  private Molecule molecules[];
+  private static final float WORLD_HEIGHT = 600;
+  private static final float WORLD_WIDTH = 1000;
+
+  private final float moleculeRenderScale = 1000000f;
+
+  private OrthographicCamera camera;
+  private SpriteBatch batch;
+  private ShapeRenderer shapeRenderer;
+  private SimulationConfig config;
+  private FillViewport viewport;
 
   @Override
   public void create() {
     Gson gson = new Gson();
     FileHandle file = Gdx.files.internal("config/simulation.json");
     SimulationConfig config = gson.fromJson(file.reader(), SimulationConfig.class);
-    molecules = new Molecule[config.simulation.numberOfMolecules()];
+    camera = new OrthographicCamera();
+    viewport = new FillViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
+    camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
+    this.config = config;
 
+    batch = new SpriteBatch();
+    shapeRenderer = new ShapeRenderer();
+
+    Molecule[] molecules = new Molecule[config.simulation.numberOfMolecules()];
+    initializeMolecules(molecules);
+      //physics.fillGrid();
     physics = new Physics(config, molecules);
-    physics.fillGrid();
+    Gdx.input.setInputProcessor(
+              new InputAdapter() {
+                  @Override
+                  public boolean touchDragged(int screenX, int screenY, int pointer) {
+                      float deltaX = -Gdx.input.getDeltaX() * camera.zoom;
+                      float deltaY = Gdx.input.getDeltaY() * camera.zoom;
+                      camera.translate(deltaX, deltaY);
+                      return true;
+                  }
 
-    Molecule hydrogenMolecule = new Molecule(config.molecule, 0, 0, new Vector2(0, 0));
+                  @Override
+                  public boolean scrolled(float amountX, float amountY) {
+                      float zoomFactor = 1.1f;
+                      if (amountY > 0) {
+                          camera.zoom *= zoomFactor;
+                      } else if (amountY < 0) {
+                          camera.zoom /= zoomFactor;
+                      }
+
+                      camera.zoom = MathUtils.clamp(camera.zoom, 1f, 100f);
+                      return true;
+                  }
+              });
+
+    Molecule hydrogenMolecule = new Molecule(config.molecule, new Vector2(0, 0), 0, new Vector2(0, 0));
+  }
+
+  private void initializeMolecules(Molecule[] molecules) {
+      Random random = new Random();
+
+      for (int i = 0; i < molecules.length; i++) {
+          float margin = 20f;
+          Vector2 position = new Vector2(
+                  margin + random.nextFloat() * (config.vessel.width() - 2 * margin),
+                  margin + random.nextFloat() * (config.vessel.height() - 2 * margin)
+          );
+
+          float initialSpeed = calculateInitialSpeed(config.simulation.temperature());
+          float angle = random.nextFloat() * 2 * (float)Math.PI;
+          Vector2 velocity = new Vector2(
+                  (float)Math.cos(angle) * initialSpeed,
+                  (float)Math.sin(angle) * initialSpeed
+          );
+
+          float kineticEnergy = 0.5f * config.molecule.mass() * velocity.len2();
+
+          molecules[i] = new Molecule(
+                  config.molecule,
+                  velocity,
+                  kineticEnergy,
+                  position
+          );
+      }
   }
 
   @Override
   public void render() {
-    physics.updateGrid();
+      Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+      camera.update();
+      shapeRenderer.setProjectionMatrix(camera.combined);
+      batch.setProjectionMatrix(camera.combined);
+
+      //physics.updateGrid();
+      physics.applyPhysics(Gdx.graphics.getDeltaTime());
+
+      drawVessel();
+
+      drawMolecules(physics.getMolecules());
+  }
+
+  private void drawVessel() {
+      shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+      shapeRenderer.setColor(Color.WHITE);
+      shapeRenderer.rect(
+              config.vessel.position().x,
+              config.vessel.position().y,
+              config.vessel.width(),
+              config.vessel.height()
+      );
+      shapeRenderer.end();
+  }
+
+  private void drawMolecules(Molecule[] molecules) {
+      shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+      for (Molecule molecule : molecules) {
+          drawMolecule(molecule);
+      }
+
+      shapeRenderer.end();
+  }
+
+  private void drawMolecule(Molecule molecule) {
+      Vector2 position = molecule.getPosition();
+      Vector2 velocity = molecule.getVelocity();
+
+      float renderDiameter = (float)config.molecule.diameter() * moleculeRenderScale;
+      renderDiameter = Math.max(renderDiameter, 3f);
+
+      float atomDistance = renderDiameter * 1.2f;
+
+
+      Vector2 bondDirection = new Vector2(velocity.y, -velocity.x).nor();
+      if (bondDirection.len() < 0.1f) {
+          bondDirection.set(1, 0).nor();
+      }
+
+      Vector2 atom1Pos = new Vector2(position).mulAdd(bondDirection, -atomDistance * 0.5f);
+      Vector2 atom2Pos = new Vector2(position).mulAdd(bondDirection, atomDistance * 0.5f);
+
+      shapeRenderer.setColor(Color.LIGHT_GRAY);
+      shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
+
+      shapeRenderer.setColor(Color.LIGHT_GRAY);
+      shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
+      shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
+  }
+
+  private float calculateInitialSpeed(float temperature) {
+      double k = 1.38e-23;
+      double mass = config.molecule.mass();
+      double speed = Math.sqrt(2 * k * temperature / mass);
+      return (float)speed;
   }
 
   @Override
-  public void dispose() {}
+  public void resize(int width, int height) {
+      viewport.update(width, height);
+  }
+
+  @Override
+  public void dispose() {
+      batch.dispose();
+      shapeRenderer.dispose();
+  }
 }
