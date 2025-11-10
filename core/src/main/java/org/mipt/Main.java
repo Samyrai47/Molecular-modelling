@@ -47,9 +47,9 @@ public class Main extends ApplicationAdapter {
 
     Molecule[] molecules = new Molecule[config.simulation.numberOfMolecules()];
     initializeMolecules(molecules);
-      //physics.fillGrid();
 
     physics = new Physics(config, molecules);
+    physics.fillGrid();
     Gdx.input.setInputProcessor(
               new InputAdapter() {
                   @Override
@@ -103,7 +103,6 @@ public class Main extends ApplicationAdapter {
                   position
           );
       }
-    physics.fillGrid();
   }
 
   @Override
@@ -114,7 +113,6 @@ public class Main extends ApplicationAdapter {
       shapeRenderer.setProjectionMatrix(camera.combined);
       batch.setProjectionMatrix(camera.combined);
 
-      //physics.updateGrid();
       physics.applyPhysics(Gdx.graphics.getDeltaTime());
       physics.collisions();
 

@@ -4,7 +4,7 @@ import com.badlogic.gdx.math.Vector2;
 import org.mipt.dto.MoleculeData;
 
 public class Molecule {
-  private double mass;
+  private float mass;
   private int numberOfAtoms;
   private int degreesOfFreedom;
   private float diameter;
@@ -48,7 +48,7 @@ public class Molecule {
     this.direction = new Vector2(1, 0);
   }
 
-  public double getMass() {
+  public float getMass() {
     return mass;
   }
 
