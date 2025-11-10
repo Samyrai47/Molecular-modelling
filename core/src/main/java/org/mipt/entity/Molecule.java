@@ -7,18 +7,21 @@ public class Molecule {
   private double mass;
   private int numberOfAtoms;
   private int degreesOfFreedom;
-  private double diameter;
+  private float diameter;
+  private float halfBoundLength;
   private Vector2 velocity;
   private float kineticEnergy;
   private Vector2 position;
+  private Vector2 direction;
 
   public Molecule() {}
 
   public Molecule(
-      double mass,
+      float mass,
       int numberOfAtoms,
       int degreesOfFreedom,
-      double diameter,
+      float diameter,
+      float halfBoundLength,
       Vector2 velocity,
       float kineticEnergy,
       Vector2 position) {
@@ -26,19 +29,23 @@ public class Molecule {
     this.numberOfAtoms = numberOfAtoms;
     this.degreesOfFreedom = degreesOfFreedom;
     this.diameter = diameter;
+    this.halfBoundLength = halfBoundLength;
     this.velocity = velocity;
     this.kineticEnergy = kineticEnergy;
     this.position = position;
+    this.direction = new Vector2(1, 0);
   }
 
   public Molecule(MoleculeData data, Vector2 velocity, float kineticEnergy, Vector2 position) {
     this.mass = data.mass();
     this.numberOfAtoms = data.numberOfAtoms();
     this.degreesOfFreedom = data.degreesOfFreedom();
-    this.diameter = data.diameter();
+    this.diameter = (float) data.diameter();
+    this.halfBoundLength = data.halfBoundLength();
     this.velocity = velocity;
     this.kineticEnergy = kineticEnergy;
     this.position = position;
+    this.direction = new Vector2(1, 0);
   }
 
   public double getMass() {
@@ -53,7 +60,7 @@ public class Molecule {
     return degreesOfFreedom;
   }
 
-  public double getDiameter() {
+  public float getDiameter() {
     return diameter;
   }
 
@@ -67,6 +74,22 @@ public class Molecule {
 
   public Vector2 getPosition() {
     return position;
+  }
+
+  public float getHalfBoundLength() {
+    return halfBoundLength;
+  }
+
+  public Vector2 getDirection() {
+    return direction;
+  }
+
+  public void setVelocity(Vector2 velocity) {
+    this.velocity = velocity;
+  }
+
+  public void updateKineticEnergy() {
+    this.kineticEnergy = (float) (0.5f * mass * velocity.len2());
   }
 
   public void setPosition(Vector2 position) {

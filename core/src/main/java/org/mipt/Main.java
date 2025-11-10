@@ -48,6 +48,7 @@ public class Main extends ApplicationAdapter {
     Molecule[] molecules = new Molecule[config.simulation.numberOfMolecules()];
     initializeMolecules(molecules);
       //physics.fillGrid();
+
     physics = new Physics(config, molecules);
     Gdx.input.setInputProcessor(
               new InputAdapter() {
@@ -102,6 +103,7 @@ public class Main extends ApplicationAdapter {
                   position
           );
       }
+    physics.fillGrid();
   }
 
   @Override
@@ -114,6 +116,7 @@ public class Main extends ApplicationAdapter {
 
       //physics.updateGrid();
       physics.applyPhysics(Gdx.graphics.getDeltaTime());
+      physics.collisions();
 
       drawVessel();
 
