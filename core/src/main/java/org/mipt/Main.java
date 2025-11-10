@@ -20,15 +20,17 @@ public class Main extends ApplicationAdapter {
     SimulationConfig config = gson.fromJson(file.reader(), SimulationConfig.class);
     molecules = new Molecule[config.simulation.numberOfMolecules()];
 
+    for (int i = 0; i < config.simulation.numberOfMolecules(); i++) {
+      molecules[i] = new Molecule(config.molecule, new Vector2(0, 0), 0, new Vector2(i, i));
+    }
+
     physics = new Physics(config, molecules);
     physics.fillGrid();
-
-    Molecule hydrogenMolecule = new Molecule(config.molecule, 0, 0, new Vector2(0, 0));
   }
 
   @Override
   public void render() {
-    physics.updateGrid();
+    physics.collisions();
   }
 
   @Override
