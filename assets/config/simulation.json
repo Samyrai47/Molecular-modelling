@@ -5,7 +5,7 @@
     "position" : { "x" :  0, "y" :  0}
   },
   "molecule" : {
-    "mass" : 3.35e-27,
+    "mass" : 3.35E-27,
     "numberOfAtoms" : 2,
     "degreesOfFreedom" : 5,
     "diameter" : 2.7E-10,
