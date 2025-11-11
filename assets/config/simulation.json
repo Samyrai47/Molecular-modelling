@@ -1,7 +1,7 @@
 {
   "vessel" : {
-    "width" : 400,
-    "height" : 400,
+    "width" : 200,
+    "height" : 200,
     "position" : { "x" :  0, "y" :  0}
   },
   "molecule" : {
@@ -12,7 +12,7 @@
     "halfBoundLength" : 0.37E-10
   },
   "simulation" : {
-    "numberOfMolecules" : 50,
+    "numberOfMolecules" : 20000,
     "timeStep" : 0.01,
     "temperature" : 100,
     "clusterSize" : 10

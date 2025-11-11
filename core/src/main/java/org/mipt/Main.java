@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import org.mipt.entity.Molecule;
 import org.mipt.entity.SimulationConfig;
 
+import java.io.IOException;
 import java.util.Random;
 
 public class Main extends ApplicationAdapter {
@@ -31,6 +32,8 @@ public class Main extends ApplicationAdapter {
   private ShapeRenderer shapeRenderer;
   private SimulationConfig config;
   private FillViewport viewport;
+  private float accumulator = 0f;
+  private static float FIXED_TIME_STEP;
 
   @Override
   public void create() {
@@ -41,12 +44,12 @@ public class Main extends ApplicationAdapter {
     viewport = new FillViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
     camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
     this.config = config;
+    FIXED_TIME_STEP = config.simulation.timeStep();
 
     batch = new SpriteBatch();
     shapeRenderer = new ShapeRenderer();
 
     Molecule[] molecules = new Molecule[config.simulation.numberOfMolecules()];
-    initializeMolecules(molecules);
 
     physics = new Physics(config, molecules);
     physics.fillGrid();
@@ -77,34 +80,6 @@ public class Main extends ApplicationAdapter {
     Molecule hydrogenMolecule = new Molecule(config.molecule, new Vector2(0, 0), 0, new Vector2(0, 0));
   }
 
-  private void initializeMolecules(Molecule[] molecules) {
-      Random random = new Random();
-
-      for (int i = 0; i < molecules.length; i++) {
-          float margin = 20f;
-          Vector2 position = new Vector2(
-                  margin + random.nextFloat() * (config.vessel.width() - 2 * margin),
-                  margin + random.nextFloat() * (config.vessel.height() - 2 * margin)
-          );
-
-          float initialSpeed = calculateInitialSpeed(config.simulation.temperature());
-          float angle = random.nextFloat() * 2 * (float)Math.PI;
-          Vector2 velocity = new Vector2(
-                  (float)Math.cos(angle) * initialSpeed,
-                  (float)Math.sin(angle) * initialSpeed
-          );
-
-          float kineticEnergy = 0.5f * config.molecule.mass() * velocity.len2();
-
-          molecules[i] = new Molecule(
-                  config.molecule,
-                  velocity,
-                  kineticEnergy,
-                  position
-          );
-      }
-  }
-
   @Override
   public void render() {
       Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -113,8 +88,12 @@ public class Main extends ApplicationAdapter {
       shapeRenderer.setProjectionMatrix(camera.combined);
       batch.setProjectionMatrix(camera.combined);
 
-      physics.applyPhysics(Gdx.graphics.getDeltaTime());
-      physics.collisions();
+      float frameTime = Gdx.graphics.getDeltaTime();
+      accumulator += frameTime;
+      while (accumulator >= FIXED_TIME_STEP) {
+          physics.applyPhysics(Gdx.graphics.getDeltaTime());
+          accumulator -= FIXED_TIME_STEP;
+      }
 
       drawVessel();
 
@@ -167,13 +146,6 @@ public class Main extends ApplicationAdapter {
       shapeRenderer.setColor(Color.LIGHT_GRAY);
       shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
       shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
-  }
-
-  private float calculateInitialSpeed(float temperature) {
-      double k = 1.38e-23;
-      double mass = config.molecule.mass();
-      double speed = Math.sqrt(2 * k * temperature / mass);
-      return (float)speed;
   }
 
   @Override
