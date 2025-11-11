@@ -15,6 +15,6 @@
     "numberOfMolecules" : 20000,
     "timeStep" : 0.01,
     "temperature" : 100,
-    "clusterSize" : 10
+    "clusterSize" : 32
   }
 }

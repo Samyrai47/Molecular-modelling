@@ -13,12 +13,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FillViewport;
 import com.google.gson.Gson;
-import java.util.Random;
 import org.mipt.entity.Molecule;
 import org.mipt.entity.SimulationConfig;
-
-import java.io.IOException;
-import java.util.Random;
 
 public class Main extends ApplicationAdapter {
   private Physics physics;
@@ -34,7 +30,6 @@ public class Main extends ApplicationAdapter {
   private SimulationConfig config;
   private FillViewport viewport;
   private float accumulator = 0f;
-  private static float FIXED_TIME_STEP;
 
   @Override
   public void create() {
@@ -45,7 +40,6 @@ public class Main extends ApplicationAdapter {
     viewport = new FillViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
     camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
     this.config = config;
-    FIXED_TIME_STEP = config.simulation.timeStep();
 
     batch = new SpriteBatch();
     shapeRenderer = new ShapeRenderer();
@@ -77,28 +71,6 @@ public class Main extends ApplicationAdapter {
             return true;
           }
         });
-  }
-
-  private void initializeMolecules(Molecule[] molecules) {
-    Random random = new Random();
-
-    for (int i = 0; i < molecules.length; i++) {
-      float margin = 20f;
-      Vector2 position =
-          new Vector2(
-              margin + random.nextFloat() * (config.vessel.width() - 2 * margin),
-              margin + random.nextFloat() * (config.vessel.height() - 2 * margin));
-
-      float initialSpeed = calculateInitialSpeed(config.simulation.temperature());
-      float angle = random.nextFloat() * 2 * (float) Math.PI;
-      Vector2 velocity =
-          new Vector2(
-              (float) Math.cos(angle) * initialSpeed, (float) Math.sin(angle) * initialSpeed);
-
-      float kineticEnergy = 0.5f * config.molecule.mass() * velocity.len2();
-
-      molecules[i] = new Molecule(config.molecule, velocity, kineticEnergy, position);
-    }
   }
 
   @Override
@@ -136,25 +108,18 @@ public class Main extends ApplicationAdapter {
 
   private void drawMolecules(Molecule[] molecules) {
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-    int col = 0;
     for (Molecule molecule : molecules) {
-      drawMolecule(molecule, col);
-      if (col == 1) {
-        col = 0;
-      } else {
-        col = 1;
-      }
-
+      drawMolecule(molecule);
     }
 
     shapeRenderer.end();
   }
 
-  private void drawMolecule(Molecule molecule, int col) {
+  private void drawMolecule(Molecule molecule) {
     Vector2 position = molecule.getPosition();
     Vector2 velocity = molecule.getVelocity();
 
-    float renderDiameter = (float) config.molecule.diameter() * moleculeRenderScale;
+    float renderDiameter = config.molecule.diameter() * moleculeRenderScale;
     renderDiameter = Math.max(renderDiameter, 3f);
 
     float atomDistance = renderDiameter * 1.2f;
@@ -167,12 +132,12 @@ public class Main extends ApplicationAdapter {
     Vector2 atom1Pos = new Vector2(position).mulAdd(bondDirection, -atomDistance * 0.5f);
     Vector2 atom2Pos = new Vector2(position).mulAdd(bondDirection, atomDistance * 0.5f);
 
-      shapeRenderer.setColor(Color.LIGHT_GRAY);
-      shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
+    shapeRenderer.setColor(Color.LIGHT_GRAY);
+    shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
 
-      shapeRenderer.setColor(Color.LIGHT_GRAY);
-      shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
-      shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
+    shapeRenderer.setColor(Color.LIGHT_GRAY);
+    shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
+    shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
   }
 
   private float calculateInitialSpeed(float temperature) {
