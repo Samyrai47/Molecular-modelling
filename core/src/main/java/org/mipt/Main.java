@@ -84,9 +84,9 @@ public class Main extends ApplicationAdapter {
     float frameTime = Gdx.graphics.getDeltaTime();
     accumulator += frameTime;
 
-    while (accumulator >= FIXED_TIME_STEP) {
-      physics.applyPhysics(FIXED_TIME_STEP);
-      accumulator -= FIXED_TIME_STEP;
+    while (accumulator >= config.simulation.timeStep()) {
+      physics.applyPhysics(config.simulation.timeStep());
+      accumulator -= config.simulation.timeStep();
     }
 
     drawVessel();
@@ -138,7 +138,6 @@ public class Main extends ApplicationAdapter {
     shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
     shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
   }
-
 
   @Override
   public void resize(int width, int height) {
