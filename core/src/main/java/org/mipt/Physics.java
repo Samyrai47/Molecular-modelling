@@ -13,8 +13,7 @@ public class Physics {
   private int[] cellSize;
   private Molecule[] grid;
   private Molecule[] molecules;
-  private final double SCALE = 1E10;
-  private final float epsilon = 0.1f;
+  private float epsilon = 0.1f;
   private final double k = 1.38e-23;
   private final double nAvogadro = 6.022E23;
 
@@ -22,19 +21,20 @@ public class Physics {
 
   public Physics(SimulationConfig config, Molecule[] molecules) {
     this.config = config;
-    this.gridWidth = (int) (config.vessel.width() / (config.molecule.diameter() * SCALE));
-    this.gridHeight = (int) (config.vessel.height() / (config.molecule.diameter() * SCALE));
+    this.gridWidth = (int) (config.vessel.width() / (config.molecule.diameter()));
+    this.gridHeight = (int) (config.vessel.height() / (config.molecule.diameter()));
     this.cellSize = new int[gridHeight * gridWidth];
     this.grid = new Molecule[gridWidth * gridHeight * config.simulation.clusterSize()];
     initializeMolecules(molecules);
     this.molecules = molecules;
+    this.epsilon *=  config.molecule.diameter();
   }
 
   private void initializeMolecules(Molecule[] molecules) {
     Random random = new Random();
 
     for (int i = 0; i < molecules.length; i++) {
-      float margin = 20f;
+      float margin = config.molecule.diameter() * 5;
       Vector2 position =
           new Vector2(
               margin + random.nextFloat() * (config.vessel.width() - 2 * margin),
@@ -54,7 +54,7 @@ public class Physics {
 
   private float calculateInitialSpeed() {
     double mass = config.molecule.mass();
-    double speed = Math.sqrt(3 * k * config.simulation.temperature() / mass);
+    double speed = Math.sqrt(2 * k * config.simulation.temperature() / mass);
     return (float) speed;
   }
 
@@ -69,8 +69,8 @@ public class Physics {
 
   public void fillGrid() {
     for (int i = 0; i < molecules.length; i++) {
-      int x = (int) (molecules[i].getPosition().x / (config.molecule.diameter() * SCALE));
-      int y = (int) (molecules[i].getPosition().y / (config.molecule.diameter() * SCALE));
+      int x = (int) (molecules[i].getPosition().x / (config.molecule.diameter()));
+      int y = (int) (molecules[i].getPosition().y / (config.molecule.diameter()));
 
       if (x < 0) {
         x = 0;
@@ -160,11 +160,11 @@ public class Physics {
         int x =
             (int)
                 (grid[i * config.simulation.clusterSize() + j].getPosition().x
-                    / (config.molecule.diameter() * SCALE));
+                    / (config.molecule.diameter()));
         int y =
             (int)
                 (grid[i * config.simulation.clusterSize() + j].getPosition().y
-                    / (config.molecule.diameter() * SCALE));
+                    / (config.molecule.diameter()));
 
         if (x < 0) {
           x = 0;
@@ -209,7 +209,7 @@ public class Physics {
             .add(second.getDirection().cpy().scl(second.getHalfBoundLength()));
 
     float dist = distanceBetweenSegments(a1, a2, b1, b2);
-    return dist < ((first.getDiameter() + second.getDiameter()) * SCALE / 2);
+    return dist < ((first.getDiameter() + second.getDiameter()) / 2);
   }
 
   private float distanceBetweenSegments(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2) {
@@ -287,7 +287,6 @@ public class Physics {
 
   public double calculatePressure(float deltaTime) {
     double totalImpulse = 0;
-    int cnt = 0;
     for (Molecule molecule : molecules) {
       Vector2 position = molecule.getPosition();
       Vector2 velocity = molecule.getVelocity();
@@ -296,13 +295,11 @@ public class Physics {
       if (position.x < config.vessel.position().x + epsilon
           || position.x + epsilon > config.vessel.position().x + config.vessel.width()) {
         totalImpulse += 2 * mass * Math.abs(velocity.x);
-        cnt += 1;
       }
 
       if (position.y < config.vessel.position().y + epsilon
           || position.y + epsilon > config.vessel.position().y + config.vessel.height()) {
         totalImpulse += 2 * mass * Math.abs(velocity.y);
-        cnt += 1;
       }
     }
 
