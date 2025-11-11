@@ -16,6 +16,7 @@ public class Physics {
   private final double SCALE = 1E10;
   private final float epsilon = 0.1f;
   private final double k = 1.38e-23;
+  private final double nAvogadro = 6.022E23;
 
   public Physics() {}
 
@@ -64,9 +65,6 @@ public class Physics {
       molecule.setPosition(
           new Vector2(x + molecule.getVelocity().x * dt, y + molecule.getVelocity().y * dt));
     }
-    calculatePressure(dt);
-    collisions();
-    handleCollisionsWithWalls();
   }
 
   public void fillGrid() {
@@ -312,6 +310,10 @@ public class Physics {
     double perimeter = 2 * (config.vessel.width() + config.vessel.height());
     double pressure = totalForce / perimeter;
     return pressure;
+  }
+
+  public double calcR(double pressure){
+      return (pressure * config.vessel.width() * config.vessel.height() * nAvogadro) / (config.simulation.numberOfMolecules() * config.simulation.temperature());
   }
 
   public Molecule[] getMolecules() {

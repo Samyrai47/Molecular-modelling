@@ -86,6 +86,11 @@ public class Main extends ApplicationAdapter {
 
     while (accumulator >= config.simulation.timeStep()) {
       physics.applyPhysics(config.simulation.timeStep());
+      double pressure = physics.calculatePressure(config.simulation.timeStep());
+      double r = physics.calcR(pressure);
+      System.out.println("Pressure: " + pressure + " R: " + r);
+      physics.collisions();
+      physics.handleCollisionsWithWalls();
       accumulator -= config.simulation.timeStep();
     }
 
