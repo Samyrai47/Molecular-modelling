@@ -93,6 +93,6 @@ public class Molecule {
   }
 
   public void setPosition(Vector2 position) {
-      this.position = position;
+    this.position = position;
   }
 }

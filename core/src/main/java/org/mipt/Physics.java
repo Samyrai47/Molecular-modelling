@@ -1,8 +1,6 @@
 package org.mipt;
 
-import java.util.Arrays;
 
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Vector2;
 import org.mipt.entity.Molecule;
