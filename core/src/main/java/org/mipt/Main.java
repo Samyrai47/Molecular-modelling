@@ -31,6 +31,8 @@ public class Main extends ApplicationAdapter {
   private SimulationConfig config;
   private FillViewport viewport;
 
+  private float accumulator = 0f;
+
   @Override
   public void create() {
     Gson gson = new Gson();
@@ -68,7 +70,7 @@ public class Main extends ApplicationAdapter {
               camera.zoom /= zoomFactor;
             }
 
-            camera.zoom = MathUtils.clamp(camera.zoom, 1f, 100f);
+            camera.zoom = MathUtils.clamp(camera.zoom, 0.3f, 100f);
             return true;
           }
         });
@@ -104,8 +106,14 @@ public class Main extends ApplicationAdapter {
     shapeRenderer.setProjectionMatrix(camera.combined);
     batch.setProjectionMatrix(camera.combined);
 
-    physics.applyPhysics(Gdx.graphics.getDeltaTime());
-    physics.collisions();
+    float frameTime = Gdx.graphics.getDeltaTime();
+    accumulator += frameTime;
+
+    while (accumulator >= config.simulation.timeStep()) {
+      physics.applyPhysics(config.simulation.timeStep());
+      physics.collisions();
+      accumulator -= config.simulation.timeStep();
+    }
 
     drawVessel();
 
