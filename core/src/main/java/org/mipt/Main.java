@@ -17,6 +17,9 @@ import java.util.Random;
 import org.mipt.entity.Molecule;
 import org.mipt.entity.SimulationConfig;
 
+import java.io.IOException;
+import java.util.Random;
+
 public class Main extends ApplicationAdapter {
   private Physics physics;
 
@@ -30,8 +33,8 @@ public class Main extends ApplicationAdapter {
   private ShapeRenderer shapeRenderer;
   private SimulationConfig config;
   private FillViewport viewport;
-
   private float accumulator = 0f;
+  private static float FIXED_TIME_STEP;
 
   @Override
   public void create() {
@@ -42,14 +45,12 @@ public class Main extends ApplicationAdapter {
     viewport = new FillViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
     camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
     this.config = config;
+    FIXED_TIME_STEP = config.simulation.timeStep();
 
     batch = new SpriteBatch();
     shapeRenderer = new ShapeRenderer();
 
     Molecule[] molecules = new Molecule[config.simulation.numberOfMolecules()];
-    molecules[0] = new Molecule(config.molecule, new Vector2(20, 0), 0.5f * config.molecule.mass() * new Vector2(20, 0).len2(), new Vector2(config.vessel.position().x + 20, config.vessel.position().y + 20));
-    molecules[1] = new Molecule(config.molecule, new Vector2(0, 0), 0.5f * config.molecule.mass() * new Vector2(0, 0).len2(), new Vector2(config.vessel.position().x + 100, config.vessel.position().y + 20));
-//    initializeMolecules(molecules);
 
     physics = new Physics(config, molecules);
     physics.fillGrid();
@@ -166,22 +167,12 @@ public class Main extends ApplicationAdapter {
     Vector2 atom1Pos = new Vector2(position).mulAdd(bondDirection, -atomDistance * 0.5f);
     Vector2 atom2Pos = new Vector2(position).mulAdd(bondDirection, atomDistance * 0.5f);
 
-    if (col == 1) {
       shapeRenderer.setColor(Color.LIGHT_GRAY);
       shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
 
       shapeRenderer.setColor(Color.LIGHT_GRAY);
       shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
       shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
-    } else {
-      shapeRenderer.setColor(Color.ROYAL);
-      shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
-
-      shapeRenderer.setColor(Color.ROYAL);
-      shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
-      shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
-    }
-
   }
 
   private float calculateInitialSpeed(float temperature) {
