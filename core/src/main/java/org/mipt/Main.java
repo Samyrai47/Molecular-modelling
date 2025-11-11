@@ -23,7 +23,7 @@ public class Main extends ApplicationAdapter {
   private static final float WORLD_HEIGHT = 600;
   private static final float WORLD_WIDTH = 1000;
 
-  private final float moleculeRenderScale = 1000000f;
+  private final float moleculeRenderScale = 1E10f;
 
   private OrthographicCamera camera;
   private SpriteBatch batch;
@@ -47,7 +47,9 @@ public class Main extends ApplicationAdapter {
     shapeRenderer = new ShapeRenderer();
 
     Molecule[] molecules = new Molecule[config.simulation.numberOfMolecules()];
-    initializeMolecules(molecules);
+    molecules[0] = new Molecule(config.molecule, new Vector2(20, 0), 0.5f * config.molecule.mass() * new Vector2(20, 0).len2(), new Vector2(config.vessel.position().x + 20, config.vessel.position().y + 20));
+    molecules[1] = new Molecule(config.molecule, new Vector2(0, 0), 0.5f * config.molecule.mass() * new Vector2(0, 0).len2(), new Vector2(config.vessel.position().x + 100, config.vessel.position().y + 20));
+//    initializeMolecules(molecules);
 
     physics = new Physics(config, molecules);
     physics.fillGrid();
@@ -133,15 +135,21 @@ public class Main extends ApplicationAdapter {
 
   private void drawMolecules(Molecule[] molecules) {
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
+    int col = 0;
     for (Molecule molecule : molecules) {
-      drawMolecule(molecule);
+      drawMolecule(molecule, col);
+      if (col == 1) {
+        col = 0;
+      } else {
+        col = 1;
+      }
+
     }
 
     shapeRenderer.end();
   }
 
-  private void drawMolecule(Molecule molecule) {
+  private void drawMolecule(Molecule molecule, int col) {
     Vector2 position = molecule.getPosition();
     Vector2 velocity = molecule.getVelocity();
 
@@ -158,12 +166,22 @@ public class Main extends ApplicationAdapter {
     Vector2 atom1Pos = new Vector2(position).mulAdd(bondDirection, -atomDistance * 0.5f);
     Vector2 atom2Pos = new Vector2(position).mulAdd(bondDirection, atomDistance * 0.5f);
 
-    shapeRenderer.setColor(Color.LIGHT_GRAY);
-    shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
+    if (col == 1) {
+      shapeRenderer.setColor(Color.LIGHT_GRAY);
+      shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
 
-    shapeRenderer.setColor(Color.LIGHT_GRAY);
-    shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
-    shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
+      shapeRenderer.setColor(Color.LIGHT_GRAY);
+      shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
+      shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
+    } else {
+      shapeRenderer.setColor(Color.ROYAL);
+      shapeRenderer.rectLine(atom1Pos, atom2Pos, renderDiameter * 0.15f);
+
+      shapeRenderer.setColor(Color.ROYAL);
+      shapeRenderer.circle(atom1Pos.x, atom1Pos.y, renderDiameter * 0.3f);
+      shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
+    }
+
   }
 
   private float calculateInitialSpeed(float temperature) {

@@ -40,7 +40,7 @@ public class Molecule {
     this.mass = data.mass();
     this.numberOfAtoms = data.numberOfAtoms();
     this.degreesOfFreedom = data.degreesOfFreedom();
-    this.diameter = (float) data.diameter();
+    this.diameter = data.diameter();
     this.halfBoundLength = data.halfBoundLength();
     this.velocity = velocity;
     this.kineticEnergy = kineticEnergy;
