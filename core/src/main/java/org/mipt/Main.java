@@ -22,7 +22,7 @@ public class Main extends ApplicationAdapter {
   private static final float WORLD_HEIGHT = 600;
   private static final float WORLD_WIDTH = 1000;
 
-  private final float moleculeRenderScale = 1E10f;
+  private static final float RENDER_SCALE = 1E10f;
 
   private OrthographicCamera camera;
   private SpriteBatch batch;
@@ -103,10 +103,10 @@ public class Main extends ApplicationAdapter {
     shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
     shapeRenderer.setColor(Color.WHITE);
     shapeRenderer.rect(
-        config.vessel.position().x,
-        config.vessel.position().y,
-        config.vessel.width(),
-        config.vessel.height());
+        config.vessel.position().x * RENDER_SCALE,
+        config.vessel.position().y * RENDER_SCALE,
+        config.vessel.width() * RENDER_SCALE,
+        config.vessel.height() * RENDER_SCALE);
     shapeRenderer.end();
   }
 
@@ -120,10 +120,10 @@ public class Main extends ApplicationAdapter {
   }
 
   private void drawMolecule(Molecule molecule) {
-    Vector2 position = molecule.getPosition();
+    Vector2 position = molecule.getPosition().cpy().scl(RENDER_SCALE);
     Vector2 velocity = molecule.getVelocity();
 
-    float renderDiameter = config.molecule.diameter() * moleculeRenderScale;
+    float renderDiameter = config.molecule.diameter() * RENDER_SCALE;
     renderDiameter = Math.max(renderDiameter, 3f);
 
     float atomDistance = renderDiameter * 1.2f;
