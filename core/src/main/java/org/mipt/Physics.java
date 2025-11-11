@@ -11,7 +11,7 @@ public class Physics {
   private SimulationConfig config;
   private int gridWidth;
   private int gridHeight;
-  private final int MAX_CELL_CAPACITY = 32;
+  private final int MAX_CELL_CAPACITY = 16;
   private int[] cellSize;
   private Molecule[] grid;
   private Molecule[] molecules;

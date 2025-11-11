@@ -79,28 +79,6 @@ public class Main extends ApplicationAdapter {
         });
   }
 
-  private void initializeMolecules(Molecule[] molecules) {
-    Random random = new Random();
-
-    for (int i = 0; i < molecules.length; i++) {
-      float margin = 20f;
-      Vector2 position =
-          new Vector2(
-              margin + random.nextFloat() * (config.vessel.width() - 2 * margin),
-              margin + random.nextFloat() * (config.vessel.height() - 2 * margin));
-
-      float initialSpeed = calculateInitialSpeed(config.simulation.temperature());
-      float angle = random.nextFloat() * 2 * (float) Math.PI;
-      Vector2 velocity =
-          new Vector2(
-              (float) Math.cos(angle) * initialSpeed, (float) Math.sin(angle) * initialSpeed);
-
-      float kineticEnergy = 0.5f * config.molecule.mass() * velocity.len2();
-
-      molecules[i] = new Molecule(config.molecule, velocity, kineticEnergy, position);
-    }
-  }
-
   @Override
   public void render() {
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -112,10 +90,9 @@ public class Main extends ApplicationAdapter {
     float frameTime = Gdx.graphics.getDeltaTime();
     accumulator += frameTime;
 
-    while (accumulator >= config.simulation.timeStep()) {
-      physics.applyPhysics(config.simulation.timeStep());
-      physics.collisions();
-      accumulator -= config.simulation.timeStep();
+    while (accumulator >= FIXED_TIME_STEP) {
+      physics.applyPhysics(FIXED_TIME_STEP);
+      accumulator -= FIXED_TIME_STEP;
     }
 
     drawVessel();
@@ -175,12 +152,6 @@ public class Main extends ApplicationAdapter {
       shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
   }
 
-  private float calculateInitialSpeed(float temperature) {
-    double k = 1.38e-23;
-    double mass = config.molecule.mass();
-    double speed = Math.sqrt(2 * k * temperature / mass);
-    return (float) speed;
-  }
 
   @Override
   public void resize(int width, int height) {
