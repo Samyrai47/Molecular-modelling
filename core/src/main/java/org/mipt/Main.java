@@ -84,10 +84,9 @@ public class Main extends ApplicationAdapter {
     float frameTime = Gdx.graphics.getDeltaTime();
     accumulator += frameTime;
 
-    while (accumulator >= config.simulation.timeStep()) {
-      physics.applyPhysics(config.simulation.timeStep());
-      physics.collisions();
-      accumulator -= config.simulation.timeStep();
+    while (accumulator >= FIXED_TIME_STEP) {
+      physics.applyPhysics(FIXED_TIME_STEP);
+      accumulator -= FIXED_TIME_STEP;
     }
 
     drawVessel();
@@ -140,12 +139,6 @@ public class Main extends ApplicationAdapter {
     shapeRenderer.circle(atom2Pos.x, atom2Pos.y, renderDiameter * 0.3f);
   }
 
-  private float calculateInitialSpeed(float temperature) {
-    double k = 1.38e-23;
-    double mass = config.molecule.mass();
-    double speed = Math.sqrt(2 * k * temperature / mass);
-    return (float) speed;
-  }
 
   @Override
   public void resize(int width, int height) {
