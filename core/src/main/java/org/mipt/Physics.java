@@ -27,7 +27,7 @@ public class Physics {
     this.grid = new Molecule[gridWidth * gridHeight * config.simulation.clusterSize()];
     initializeMolecules(molecules);
     this.molecules = molecules;
-    this.epsilon *=  config.molecule.diameter();
+    this.epsilon *=  config.molecule.diameter() / 2;
   }
 
   private void initializeMolecules(Molecule[] molecules) {

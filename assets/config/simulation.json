@@ -13,8 +13,10 @@
   },
   "simulation" : {
     "numberOfMolecules" : 100000,
-    "timeStep" : 1E-12,
-    "temperature" : 100,
-    "clusterSize" : 16
+    "timeStep" : 1E-10,
+    "temperature" : 10,
+    "clusterSize" : 16,
+    "stepsPerFrame": 1,
+    "visibleMoleculesStep": 2
   }
 }

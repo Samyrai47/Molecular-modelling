@@ -22,7 +22,7 @@ public class Main extends ApplicationAdapter {
   private static final float WORLD_HEIGHT = 600;
   private static final float WORLD_WIDTH = 1000;
 
-  private static final float RENDER_SCALE = 1E10f;
+  private static final float RENDER_SCALE = 1E9f;
 
   private OrthographicCamera camera;
   private SpriteBatch batch;
@@ -81,17 +81,13 @@ public class Main extends ApplicationAdapter {
     shapeRenderer.setProjectionMatrix(camera.combined);
     batch.setProjectionMatrix(camera.combined);
 
-    float frameTime = Gdx.graphics.getDeltaTime();
-    accumulator += frameTime;
-
-    while (accumulator >= config.simulation.timeStep()) {
+    for (int i = 0; i < config.simulation.stepsPerFrame(); i++) {
       physics.applyPhysics(config.simulation.timeStep());
       double pressure = physics.calculatePressure(config.simulation.timeStep());
       double r = physics.calcR(pressure);
       System.out.println("Pressure: " + pressure + " R: " + r);
       physics.collisions();
       physics.handleCollisionsWithWalls();
-      accumulator -= config.simulation.timeStep();
     }
 
     drawVessel();
@@ -112,8 +108,8 @@ public class Main extends ApplicationAdapter {
 
   private void drawMolecules(Molecule[] molecules) {
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-    for (Molecule molecule : molecules) {
-      drawMolecule(molecule);
+    for (int i = 0; i < molecules.length; i+= config.simulation.visibleMoleculesStep()) {
+      drawMolecule(molecules[i]);
     }
 
     shapeRenderer.end();
