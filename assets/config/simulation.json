@@ -17,6 +17,7 @@
     "temperature" : 10,
     "clusterSize" : 16,
     "stepsPerFrame": 1,
-    "visibleMoleculesStep": 2
+    "visibleMoleculesStep": 1000,
+    "tempRatePerSecond": 1000000000
   }
 }

@@ -265,7 +265,7 @@ public class Physics {
           || position.x + epsilon > config.vessel.position().x + config.vessel.width()) {
         velocity.x = -velocity.x;
 
-        if (position.x < config.vessel.position().x) {
+        if (position.x < config.vessel.position().x + epsilon) {
           position.x = config.vessel.position().x + epsilon;
         } else {
           position.x = config.vessel.position().x + config.vessel.width() - epsilon;
@@ -276,7 +276,7 @@ public class Physics {
           || position.y + epsilon > config.vessel.position().y + config.vessel.height()) {
         velocity.y = -velocity.y;
 
-        if (position.y < config.vessel.position().y) {
+        if (position.y < config.vessel.position().y + epsilon) {
           position.y = config.vessel.position().y + epsilon;
         } else {
           position.y = config.vessel.position().y + config.vessel.height() - epsilon;
@@ -311,6 +311,24 @@ public class Physics {
 
   public double calcR(double pressure){
       return (pressure * config.vessel.width() * config.vessel.height() * nAvogadro) / (config.simulation.numberOfMolecules() * config.simulation.temperature());
+  }
+
+  public double calcTemp() {
+      double totalKE = 0;
+      for (Molecule molecule : molecules) {
+          totalKE += 0.5 * molecule.getMass() * molecule.getVelocity().len2();
+      }
+      return totalKE / ( molecules.length * k );
+  }
+
+  public void heatStep(double deltaTemp) {
+    double currentTemp = calcTemp();
+    double nextTemp = currentTemp + deltaTemp;
+    double c = Math.sqrt(nextTemp / currentTemp);
+    for (Molecule molecule : molecules) {
+        Vector2 v = molecule.getVelocity();
+        molecule.setVelocity(v.scl((float) c));
+    }
   }
 
   public Molecule[] getMolecules() {

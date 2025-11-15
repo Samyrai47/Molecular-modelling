@@ -16,8 +16,11 @@ import com.google.gson.Gson;
 import org.mipt.entity.Molecule;
 import org.mipt.entity.SimulationConfig;
 
+import java.io.IOException;
+
 public class Main extends ApplicationAdapter {
   private Physics physics;
+  private PhysicsLogger logger;
 
   private static final float WORLD_HEIGHT = 600;
   private static final float WORLD_WIDTH = 1000;
@@ -48,7 +51,12 @@ public class Main extends ApplicationAdapter {
 
     physics = new Physics(config, molecules);
     physics.fillGrid();
-    Gdx.input.setInputProcessor(
+      try {
+          logger = new PhysicsLogger("dataset");
+      } catch (IOException e) {
+          throw new RuntimeException(e);
+      }
+      Gdx.input.setInputProcessor(
         new InputAdapter() {
           @Override
           public boolean touchDragged(int screenX, int screenY, int pointer) {
@@ -84,8 +92,13 @@ public class Main extends ApplicationAdapter {
     for (int i = 0; i < config.simulation.stepsPerFrame(); i++) {
       physics.applyPhysics(config.simulation.timeStep());
       double pressure = physics.calculatePressure(config.simulation.timeStep());
-      double r = physics.calcR(pressure);
-      System.out.println("Pressure: " + pressure + " R: " + r);
+      double temp = physics.calcTemp();
+      try {
+        logger.logPT(pressure, temp);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      physics.heatStep(config.simulation.timeStep() * config.simulation.tempRatePerSecond());
       physics.collisions();
       physics.handleCollisionsWithWalls();
     }
@@ -147,6 +160,11 @@ public class Main extends ApplicationAdapter {
 
   @Override
   public void dispose() {
+    try {
+      logger.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     batch.dispose();
     shapeRenderer.dispose();
   }
