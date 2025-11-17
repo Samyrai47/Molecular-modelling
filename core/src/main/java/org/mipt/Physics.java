@@ -16,6 +16,9 @@ public class Physics {
   private float epsilon = 0.1f;
   private final double k = 1.38e-23;
   private final double nAvogadro = 6.022E23;
+  private double accumulatedImpulse = 0.0;
+  private float currentWidth;
+  private float wallVelocity;
 
   public Physics() {}
 
@@ -28,6 +31,18 @@ public class Physics {
     initializeMolecules(molecules);
     this.molecules = molecules;
     this.epsilon *=  config.molecule.diameter() / 2;
+    this.currentWidth = config.vessel.width();
+    this.wallVelocity = 0;
+  }
+
+  public void resetImpulse() {
+    this.accumulatedImpulse = 0.0;
+  }
+
+  public double getAccumulatedImpulse(){
+      double val = accumulatedImpulse;
+      accumulatedImpulse = 0.0;
+      return val;
   }
 
   private void initializeMolecules(Molecule[] molecules) {
@@ -262,19 +277,35 @@ public class Physics {
       Vector2 velocity = molecule.getVelocity();
 
       if (position.x < config.vessel.position().x + epsilon
-          || position.x + epsilon > config.vessel.position().x + config.vessel.width()) {
-        velocity.x = -velocity.x;
+          || position.x + epsilon > config.vessel.position().x + currentWidth) {
+
+        double impulseX;
 
         if (position.x < config.vessel.position().x + epsilon) {
           position.x = config.vessel.position().x + epsilon;
+          velocity.x = -velocity.x;
+          impulseX = 2.0 * molecule.getMass() * Math.abs(velocity.x);
         } else {
-          position.x = config.vessel.position().x + config.vessel.width() - epsilon;
+          float vxRel = (velocity.x - wallVelocity);
+          impulseX = 0;
+          if (vxRel > 0) {
+            vxRel = -vxRel;
+            velocity.x = (float) (vxRel + wallVelocity);
+            impulseX += 2 * molecule.getMass() * Math.abs(vxRel);
+          }
+
+          position.x = config.vessel.position().x + currentWidth - epsilon;
         }
+
+        accumulatedImpulse += impulseX;
       }
 
       if (position.y < config.vessel.position().y + epsilon
           || position.y + epsilon > config.vessel.position().y + config.vessel.height()) {
         velocity.y = -velocity.y;
+
+        double impulseY = 2.0 * molecule.getMass() * Math.abs(velocity.y);
+        accumulatedImpulse += impulseY;
 
         if (position.y < config.vessel.position().y + epsilon) {
           position.y = config.vessel.position().y + epsilon;
@@ -293,8 +324,15 @@ public class Physics {
       double mass = molecule.getMass();
 
       if (position.x < config.vessel.position().x + epsilon
-          || position.x + epsilon > config.vessel.position().x + config.vessel.width()) {
-        totalImpulse += 2 * mass * Math.abs(velocity.x);
+          || position.x + epsilon > config.vessel.position().x + currentWidth) {
+        if (position.x < config.vessel.position().x + epsilon) {
+          totalImpulse += 2 * mass * Math.abs(velocity.x);
+        } else {
+            float vxRel = (velocity.x - wallVelocity);
+            if (vxRel > 0) {
+                totalImpulse += 2 * mass * Math.abs(vxRel);
+            }
+        }
       }
 
       if (position.y < config.vessel.position().y + epsilon
@@ -304,13 +342,13 @@ public class Physics {
     }
 
     double totalForce = totalImpulse / deltaTime;
-    double perimeter = 2 * (config.vessel.width() + config.vessel.height());
+    double perimeter = 2 * (currentWidth + config.vessel.height());
     double pressure = totalForce / perimeter;
     return pressure;
   }
 
-  public double calcR(double pressure){
-      return (pressure * config.vessel.width() * config.vessel.height() * nAvogadro) / (config.simulation.numberOfMolecules() * config.simulation.temperature());
+  public double calcR(double pressure, double temp){
+      return (pressure * currentWidth * config.vessel.height() * nAvogadro) / (config.simulation.numberOfMolecules() * temp);
   }
 
   public double calcTemp() {
@@ -319,6 +357,10 @@ public class Physics {
           totalKE += 0.5 * molecule.getMass() * molecule.getVelocity().len2();
       }
       return totalKE / ( molecules.length * k );
+  }
+
+  public double calcArea() {
+      return currentWidth * config.vessel.height();
   }
 
   public void heatStep(double deltaTemp) {
@@ -331,7 +373,37 @@ public class Physics {
     }
   }
 
+  public void moveWall(double dt)  {
+      currentWidth += (float) (wallVelocity * dt);
+  }
+
   public Molecule[] getMolecules() {
     return molecules;
   }
+
+  public float getWidth() {
+      return currentWidth;
+  }
+
+  public void turnOnWallMoving() {
+      wallVelocity = (float) config.vessel.wallVelocity();
+  }
+
+  public void turnOffWallMoving() {
+      wallVelocity = 0;
+  }
+
+  public void applyThermostat(double targetTemp) {
+      double currentTemp = calcTemp();
+
+      if (Math.abs(currentTemp - targetTemp) <= 0.01) return;
+
+      double scale = Math.sqrt(targetTemp / currentTemp);
+      for (Molecule molecule : molecules) {
+          Vector2 v = molecule.getVelocity();
+          v.scl((float) scale);
+          molecule.setVelocity(v);
+      }
+  }
+
 }

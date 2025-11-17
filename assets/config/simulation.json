@@ -2,7 +2,8 @@
   "vessel" : {
     "width" : 5E-7,
     "height" : 5E-7,
-    "position" : { "x" :  0, "y" :  0}
+    "position" : { "x" :  0, "y" :  0},
+    "wallVelocity": 10
   },
   "molecule" : {
     "mass" : 6.646e-27,
@@ -15,9 +16,11 @@
     "numberOfMolecules" : 100000,
     "timeStep" : 1E-10,
     "temperature" : 10,
+    "targetTemp": 100,
     "clusterSize" : 16,
     "stepsPerFrame": 1,
     "visibleMoleculesStep": 1000,
-    "tempRatePerSecond": 1000000000
+    "tempRatePerSecond": 1000000000,
+    "thermostatStepsToApply": 5
   }
 }

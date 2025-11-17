@@ -27,12 +27,16 @@ public class Main extends ApplicationAdapter {
 
   private static final float RENDER_SCALE = 1E9f;
 
+  private static final float FIXED_TIME_STEP = 0.01f;
+  private boolean beginToIncreaseArea = false;
+
   private OrthographicCamera camera;
   private SpriteBatch batch;
   private ShapeRenderer shapeRenderer;
   private SimulationConfig config;
   private FillViewport viewport;
   private float accumulator = 0f;
+  private int thermostatSteps = 0;
 
   @Override
   public void create() {
@@ -88,19 +92,56 @@ public class Main extends ApplicationAdapter {
     camera.update();
     shapeRenderer.setProjectionMatrix(camera.combined);
     batch.setProjectionMatrix(camera.combined);
+    /*float frameTime = FIXED_TIME_STEP;
+    accumulator += frameTime;
+    double pressure = 0;
+    int iterations = 0;
+    System.out.println(accumulator + " " + accumulator / config.simulation.timeStep());
+    while (accumulator >= config.simulation.timeStep()){
+        physics.applyPhysics(config.simulation.timeStep());
+        //pressure += physics.calculatePressure(config.simulation.timeStep());
+        physics.collisions();
+        physics.handleCollisionsWithWalls();
+        accumulator -= config.simulation.timeStep();
+        ++iterations;
+    }
 
+    double totalSimTime = iterations * config.simulation.timeStep();
+    pressure = (physics.getAccumulatedImpulse() / totalSimTime) / (2 * (config.vessel.width() + config.vessel.height()));
+    double temp = physics.calcTemp();
+    double r = physics.calcR(pressure, temp);
+    System.out.println("Pressure: " + pressure + ", T: " + temp + ", R: " + r + " " + physics.getMolecules()[0].getPosition());*/
     for (int i = 0; i < config.simulation.stepsPerFrame(); i++) {
+      if (beginToIncreaseArea){
+        ++thermostatSteps;
+        physics.turnOnWallMoving();
+        physics.moveWall(config.simulation.timeStep());
+      }
+
       physics.applyPhysics(config.simulation.timeStep());
       double pressure = physics.calculatePressure(config.simulation.timeStep());
-      double temp = physics.calcTemp();
+      double curTemp = physics.calcTemp();
+      double area = physics.calcArea();
+
       try {
-        logger.logPT(pressure, temp);
+        logger.logPT(pressure, curTemp);
+        logger.logPV(pressure, area);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      physics.heatStep(config.simulation.timeStep() * config.simulation.tempRatePerSecond());
+
+      System.out.println("Pressure: " + pressure + " Temp: " + curTemp + " Area: " + area);
+      if (curTemp < config.simulation.targetTemp() && !beginToIncreaseArea) {
+        physics.heatStep(config.simulation.timeStep() * config.simulation.tempRatePerSecond());
+      } else {
+          beginToIncreaseArea = true;
+      }
       physics.collisions();
       physics.handleCollisionsWithWalls();
+      if (thermostatSteps > config.simulation.thermostatStepsToApply() ) {
+          physics.applyThermostat(config.simulation.targetTemp());
+          thermostatSteps = 0;
+      }
     }
 
     drawVessel();
@@ -114,7 +155,7 @@ public class Main extends ApplicationAdapter {
     shapeRenderer.rect(
         config.vessel.position().x * RENDER_SCALE,
         config.vessel.position().y * RENDER_SCALE,
-        config.vessel.width() * RENDER_SCALE,
+        physics.getWidth() * RENDER_SCALE,
         config.vessel.height() * RENDER_SCALE);
     shapeRenderer.end();
   }
