@@ -393,6 +393,10 @@ public class Physics {
       wallVelocity = 0;
   }
 
+    public void setWallVelocity(float wallVelocity) {
+        this.wallVelocity = wallVelocity;
+    }
+
   public void applyThermostat(double targetTemp) {
       double currentTemp = calcTemp();
 
