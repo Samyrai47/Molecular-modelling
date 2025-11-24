@@ -13,28 +13,43 @@ public class Physics {
   private int[] cellSize;
   private Molecule[] grid;
   private Molecule[] molecules;
-  private final double SCALE = 1E10;
-  private final float epsilon = 0.1f;
+  private float epsilon = 0.1f;
   private final double k = 1.38e-23;
   private final double nAvogadro = 6.022E23;
+  private double accumulatedImpulse = 0.0;
+  private float currentWidth;
+  private float wallVelocity;
 
   public Physics() {}
 
   public Physics(SimulationConfig config, Molecule[] molecules) {
     this.config = config;
-    this.gridWidth = (int) (config.vessel.width() / (config.molecule.diameter() * SCALE));
-    this.gridHeight = (int) (config.vessel.height() / (config.molecule.diameter() * SCALE));
+    this.gridWidth = (int) (config.vessel.width() / (config.molecule.diameter()));
+    this.gridHeight = (int) (config.vessel.height() / (config.molecule.diameter()));
     this.cellSize = new int[gridHeight * gridWidth];
     this.grid = new Molecule[gridWidth * gridHeight * config.simulation.clusterSize()];
     initializeMolecules(molecules);
     this.molecules = molecules;
+    this.epsilon *=  config.molecule.diameter() / 2;
+    this.currentWidth = config.vessel.width();
+    this.wallVelocity = 0;
+  }
+
+  public void resetImpulse() {
+    this.accumulatedImpulse = 0.0;
+  }
+
+  public double getAccumulatedImpulse(){
+      double val = accumulatedImpulse;
+      accumulatedImpulse = 0.0;
+      return val;
   }
 
   private void initializeMolecules(Molecule[] molecules) {
     Random random = new Random();
 
     for (int i = 0; i < molecules.length; i++) {
-      float margin = 20f;
+      float margin = config.molecule.diameter() * 5;
       Vector2 position =
           new Vector2(
               margin + random.nextFloat() * (config.vessel.width() - 2 * margin),
@@ -54,7 +69,7 @@ public class Physics {
 
   private float calculateInitialSpeed() {
     double mass = config.molecule.mass();
-    double speed = Math.sqrt(3 * k * config.simulation.temperature() / mass);
+    double speed = Math.sqrt(2 * k * config.simulation.temperature() / mass);
     return (float) speed;
   }
 
@@ -69,8 +84,8 @@ public class Physics {
 
   public void fillGrid() {
     for (int i = 0; i < molecules.length; i++) {
-      int x = (int) (molecules[i].getPosition().x / (config.molecule.diameter() * SCALE));
-      int y = (int) (molecules[i].getPosition().y / (config.molecule.diameter() * SCALE));
+      int x = (int) (molecules[i].getPosition().x / (config.molecule.diameter()));
+      int y = (int) (molecules[i].getPosition().y / (config.molecule.diameter()));
 
       if (x < 0) {
         x = 0;
@@ -160,11 +175,11 @@ public class Physics {
         int x =
             (int)
                 (grid[i * config.simulation.clusterSize() + j].getPosition().x
-                    / (config.molecule.diameter() * SCALE));
+                    / (config.molecule.diameter()));
         int y =
             (int)
                 (grid[i * config.simulation.clusterSize() + j].getPosition().y
-                    / (config.molecule.diameter() * SCALE));
+                    / (config.molecule.diameter()));
 
         if (x < 0) {
           x = 0;
@@ -209,7 +224,7 @@ public class Physics {
             .add(second.getDirection().cpy().scl(second.getHalfBoundLength()));
 
     float dist = distanceBetweenSegments(a1, a2, b1, b2);
-    return dist < ((first.getDiameter() + second.getDiameter()) * SCALE / 2);
+    return dist < ((first.getDiameter() + second.getDiameter()) / 2);
   }
 
   private float distanceBetweenSegments(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2) {
@@ -262,21 +277,37 @@ public class Physics {
       Vector2 velocity = molecule.getVelocity();
 
       if (position.x < config.vessel.position().x + epsilon
-          || position.x + epsilon > config.vessel.position().x + config.vessel.width()) {
-        velocity.x = -velocity.x;
+          || position.x + epsilon > config.vessel.position().x + currentWidth) {
 
-        if (position.x < config.vessel.position().x) {
+        double impulseX;
+
+        if (position.x < config.vessel.position().x + epsilon) {
           position.x = config.vessel.position().x + epsilon;
+          velocity.x = -velocity.x;
+          impulseX = 2.0 * molecule.getMass() * Math.abs(velocity.x);
         } else {
-          position.x = config.vessel.position().x + config.vessel.width() - epsilon;
+          float vxRel = (velocity.x - wallVelocity);
+          impulseX = 0;
+          if (vxRel > 0) {
+            vxRel = -vxRel;
+            velocity.x = (float) (vxRel + wallVelocity);
+            impulseX += 2 * molecule.getMass() * Math.abs(vxRel);
+          }
+
+          position.x = config.vessel.position().x + currentWidth - epsilon;
         }
+
+        accumulatedImpulse += impulseX;
       }
 
       if (position.y < config.vessel.position().y + epsilon
           || position.y + epsilon > config.vessel.position().y + config.vessel.height()) {
         velocity.y = -velocity.y;
 
-        if (position.y < config.vessel.position().y) {
+        double impulseY = 2.0 * molecule.getMass() * Math.abs(velocity.y);
+        accumulatedImpulse += impulseY;
+
+        if (position.y < config.vessel.position().y + epsilon) {
           position.y = config.vessel.position().y + epsilon;
         } else {
           position.y = config.vessel.position().y + config.vessel.height() - epsilon;
@@ -287,36 +318,96 @@ public class Physics {
 
   public double calculatePressure(float deltaTime) {
     double totalImpulse = 0;
-    int cnt = 0;
     for (Molecule molecule : molecules) {
       Vector2 position = molecule.getPosition();
       Vector2 velocity = molecule.getVelocity();
       double mass = molecule.getMass();
 
       if (position.x < config.vessel.position().x + epsilon
-          || position.x + epsilon > config.vessel.position().x + config.vessel.width()) {
-        totalImpulse += 2 * mass * Math.abs(velocity.x);
-        cnt += 1;
+          || position.x + epsilon > config.vessel.position().x + currentWidth) {
+        if (position.x < config.vessel.position().x + epsilon) {
+          totalImpulse += 2 * mass * Math.abs(velocity.x);
+        } else {
+            float vxRel = (velocity.x - wallVelocity);
+            if (vxRel > 0) {
+                totalImpulse += 2 * mass * Math.abs(vxRel);
+            }
+        }
       }
 
       if (position.y < config.vessel.position().y + epsilon
           || position.y + epsilon > config.vessel.position().y + config.vessel.height()) {
         totalImpulse += 2 * mass * Math.abs(velocity.y);
-        cnt += 1;
       }
     }
 
     double totalForce = totalImpulse / deltaTime;
-    double perimeter = 2 * (config.vessel.width() + config.vessel.height());
+    double perimeter = 2 * (currentWidth + config.vessel.height());
     double pressure = totalForce / perimeter;
     return pressure;
   }
 
-  public double calcR(double pressure){
-      return (pressure * config.vessel.width() * config.vessel.height() * nAvogadro) / (config.simulation.numberOfMolecules() * config.simulation.temperature());
+  public double calcR(double pressure, double temp){
+      return (pressure * currentWidth * config.vessel.height() * nAvogadro) / (config.simulation.numberOfMolecules() * temp);
+  }
+
+  public double calcTemp() {
+      double totalKE = 0;
+      for (Molecule molecule : molecules) {
+          totalKE += 0.5 * molecule.getMass() * molecule.getVelocity().len2();
+      }
+      return totalKE / ( molecules.length * k );
+  }
+
+  public double calcArea() {
+      return currentWidth * config.vessel.height();
+  }
+
+  public void heatStep(double deltaTemp) {
+    double currentTemp = calcTemp();
+    double nextTemp = currentTemp + deltaTemp;
+    double c = Math.sqrt(nextTemp / currentTemp);
+    for (Molecule molecule : molecules) {
+        Vector2 v = molecule.getVelocity();
+        molecule.setVelocity(v.scl((float) c));
+    }
+  }
+
+  public void moveWall(double dt)  {
+      currentWidth += (float) (wallVelocity * dt);
   }
 
   public Molecule[] getMolecules() {
     return molecules;
   }
+
+  public float getWidth() {
+      return currentWidth;
+  }
+
+  public void turnOnWallMoving() {
+      wallVelocity = (float) config.vessel.wallVelocity();
+  }
+
+  public void turnOffWallMoving() {
+      wallVelocity = 0;
+  }
+
+    public void setWallVelocity(float wallVelocity) {
+        this.wallVelocity = wallVelocity;
+    }
+
+  public void applyThermostat(double targetTemp) {
+      double currentTemp = calcTemp();
+
+      if (Math.abs(currentTemp - targetTemp) <= 0.01) return;
+
+      double scale = Math.sqrt(targetTemp / currentTemp);
+      for (Molecule molecule : molecules) {
+          Vector2 v = molecule.getVelocity();
+          v.scl((float) scale);
+          molecule.setVelocity(v);
+      }
+  }
+
 }

@@ -1,20 +1,26 @@
 {
   "vessel" : {
-    "width" : 500,
-    "height" : 500,
-    "position" : { "x" :  0, "y" :  0}
+    "width" : 5E-7,
+    "height" : 5E-7,
+    "position" : { "x" :  0, "y" :  0},
+    "wallVelocity": 10
   },
   "molecule" : {
-    "mass" : 3.35E-27,
-    "numberOfAtoms" : 2,
-    "degreesOfFreedom" : 5,
-    "diameter" : 2.7E-10,
-    "halfBoundLength" : 0.37E-10
+    "mass" : 6.646e-27,
+    "numberOfAtoms" : 1,
+    "degreesOfFreedom" : 3,
+    "diameter" : 2.6e-10,
+    "halfBoundLength" : 0
   },
   "simulation" : {
     "numberOfMolecules" : 100000,
-    "timeStep" : 0.1,
-    "temperature" : 100,
-    "clusterSize" : 16
+    "timeStep" : 1E-10,
+    "temperature" : 10,
+    "targetTemp": 100,
+    "clusterSize" : 16,
+    "stepsPerFrame": 1,
+    "visibleMoleculesStep": 1000,
+    "tempRatePerSecond": 1000000000,
+    "thermostatStepsToApply": 5
   }
 }
