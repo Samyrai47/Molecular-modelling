@@ -1,0 +1,20 @@
+{
+  "vessel" : {
+    "width" : 500,
+    "height" : 500,
+    "position" : { "x" :  0, "y" :  0}
+  },
+  "molecule" : {
+    "mass" : 3.35E-27,
+    "numberOfAtoms" : 2,
+    "degreesOfFreedom" : 5,
+    "diameter" : 2.7E-10,
+    "halfBoundLength" : 0.37E-10
+  },
+  "simulation" : {
+    "numberOfMolecules" : 100000,
+    "timeStep" : 0.1,
+    "temperature" : 100,
+    "clusterSize" : 16
+  }
+}
