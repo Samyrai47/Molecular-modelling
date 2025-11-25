@@ -3,7 +3,8 @@
     "width" : 5E-7,
     "height" : 5E-7,
     "position" : { "x" :  0, "y" :  0},
-    "wallVelocity": 10
+    "wallVelocity": 10,
+    "heatCapacity": 460
   },
   "molecule" : {
     "mass" : 6.646e-27,
@@ -21,6 +22,7 @@
     "stepsPerFrame": 1,
     "visibleMoleculesStep": 1000,
     "tempRatePerSecond": 1000000000,
-    "thermostatStepsToApply": 5
+    "thermostatStepsToApply": 5,
+    "power": 46E10
   }
 }

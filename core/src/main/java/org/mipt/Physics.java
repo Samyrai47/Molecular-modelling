@@ -16,6 +16,7 @@ public class Physics {
   private float epsilon = 0.1f;
   private final double k = 1.38e-23;
   private final double nAvogadro = 6.022E23;
+  private final double r = 8.31;
   private double accumulatedImpulse = 0.0;
   private float currentWidth;
   private float wallVelocity;
@@ -445,5 +446,17 @@ public class Physics {
 
   public double getLeftWallTemperature() {
     return leftWallTemperature;
+  }
+
+  public double calcRequiredIsobaricTemp(double targetPressure) {
+      return targetPressure * calcArea() / (config.simulation.numberOfMolecules() * k);
+  }
+
+  public double getR() {
+      return r;
+  }
+
+  public double calcMole() {
+      return config.simulation.numberOfMolecules() / nAvogadro;
   }
 }

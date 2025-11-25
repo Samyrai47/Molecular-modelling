@@ -36,11 +36,12 @@ public class Main extends ApplicationAdapter {
   private static final float EXPANSION_FACTOR = 2.0f;
 
   // Флаг изобарной фазы (сжатие + охлаждение)
-  private boolean beginCompression = false;
+  private boolean beginCompression = true;
 
   // Стартовые параметры изобарного процесса
   private double isobaricStartTemp;
   private double isobaricStartArea;
+  private double targetPressure;
 
   // Начальная ширина сосуда (для того чтобы вернуться в исходное состояние)
   private float initialWidth;
@@ -52,6 +53,11 @@ public class Main extends ApplicationAdapter {
   private FillViewport viewport;
   private float accumulator = 0f;
   private int thermostatSteps = 0;
+  double totalHeatInput = 0;
+  double heatPower;
+  double Kp = 1E14; // коэффициент регулирования
+  double Ki = 1E25;
+  double integral = 0;
 
   @Override
   public void create() {
@@ -74,6 +80,18 @@ public class Main extends ApplicationAdapter {
     physics.fillGrid();
     leftWallTemperature = config.simulation.temperature();
     physics.setLeftWallTemperature(leftWallTemperature);
+    if (beginCompression) {
+      isobaricStartArea = physics.calcArea();
+      isobaricStartTemp = physics.calcTemp();
+      for (int i = 0; i < 3; i++) {
+        physics.applyPhysics(config.simulation.timeStep());
+        physics.collisions();
+        physics.handleCollisionsWithWalls();
+      }
+      physics.applyPhysics(config.simulation.timeStep());
+      targetPressure = physics.calculatePressure(config.simulation.timeStep());
+    }
+    heatPower = config.simulation.power();
     try {
       logger = new PhysicsLogger("dataset");
     } catch (IOException e) {
@@ -113,20 +131,30 @@ public class Main extends ApplicationAdapter {
     batch.setProjectionMatrix(camera.combined);
 
     for (int i = 0; i < config.simulation.stepsPerFrame(); i++) {
-
       float dt = config.simulation.timeStep();
+      double lastTemp = physics.calcTemp();
+      physics.applyPhysics(dt);
 
-      double maxWallTemperature = 200.0;
+      double maxWallTemperature = 300.0;
 
-      if (leftWallTemperature < maxWallTemperature) {
-        leftWallTemperature += leftWallHeatingRate * dt;
-        if (leftWallTemperature > maxWallTemperature) {
-          leftWallTemperature = maxWallTemperature;
+        if (beginCompression) {
+            // Двигаем стенку вперед (изобарное расширение)
+            physics.setWallVelocity((float) Math.abs(config.vessel.wallVelocity()));
+            physics.moveWall(dt);
+            System.out.println(physics.getWidth());
         }
-        physics.setLeftWallTemperature(leftWallTemperature);
-      }
 
-      // --- Движение стенки ---
+// Вычисляем давление
+        double pressure = physics.calculatePressure(dt);
+
+// Рассчитываем нагрев
+        double dQ = heatPower * dt;
+        totalHeatInput += dQ;
+        leftWallTemperature += dQ / config.vessel.heatCapacity();
+        physics.setLeftWallTemperature(leftWallTemperature);
+
+
+        // --- Движение стенки ---
       //                if (beginCompression) {
       //                    // Фаза 3: изобарное сжатие — двигаем стенку обратно (влево)
       //                    physics.setWallVelocity(-(float)
@@ -150,12 +178,10 @@ public class Main extends ApplicationAdapter {
       //                }
 
       // --- Динамика частиц ---
-      physics.applyPhysics(dt);
 
-      double pressure = physics.calculatePressure(dt);
+      pressure = physics.calculatePressure(dt);
       double curTemp = physics.calcTemp();
       double area = physics.calcArea();
-
       try {
         logger.logPT(pressure, curTemp);
         logger.logPV(pressure, area);
@@ -164,7 +190,7 @@ public class Main extends ApplicationAdapter {
         throw new RuntimeException(e);
       }
 
-      //      System.out.println("Pressure: " + pressure + " Temp: " + curTemp + " Area: " + area);
+      System.out.println("Pressure: " + pressure + " Temp: " + curTemp + " Area: " + area);
       System.out.println(
           "Gas T = " + curTemp + " K, wall T = " + physics.getLeftWallTemperature() + " K");
 
@@ -192,9 +218,19 @@ public class Main extends ApplicationAdapter {
       //                    }
       //                }
 
+      if (beginCompression) {
+          if (curTemp >= config.simulation.targetTemp()) {
+              beginCompression = false;
+              physics.turnOffWallMoving();
+          }
+      }
       // Столкновения после обновления скоростей/стенок
       physics.collisions();
       physics.handleCollisionsWithWalls();
+      curTemp = physics.calcTemp();
+      double deltaU = physics.calcMole() * physics.getR() * (curTemp - lastTemp);
+      double work = config.vessel.wallVelocity() * dt * config.vessel.height() * pressure;
+      System.out.println("DeltaU: " + deltaU + " Work: " + work);
 
       // Фаза 2: изотермическое расширение — поддерживаем температуру около targetTemp
       //                if (beginToIncreaseArea && !beginCompression) {
