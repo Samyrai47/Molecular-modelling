@@ -36,7 +36,7 @@ public class Main extends ApplicationAdapter {
   private static final float EXPANSION_FACTOR = 2.0f;
 
   // Флаг изобарной фазы (сжатие + охлаждение)
-  private boolean beginCompression = true;
+  private boolean beginCompression = false;
 
   // Стартовые параметры изобарного процесса
   private double isobaricStartTemp;
@@ -54,6 +54,8 @@ public class Main extends ApplicationAdapter {
   private float accumulator = 0f;
   private int thermostatSteps = 0;
   double totalHeatInput = 0;
+  double totalWork = 0;
+  double totalDeltaU = 0;
   double heatPower;
   double Kp = 1E14; // коэффициент регулирования
   double Ki = 1E25;
@@ -137,16 +139,6 @@ public class Main extends ApplicationAdapter {
 
       double maxWallTemperature = 300.0;
 
-        if (beginCompression) {
-            // Двигаем стенку вперед (изобарное расширение)
-            physics.setWallVelocity((float) Math.abs(config.vessel.wallVelocity()));
-            physics.moveWall(dt);
-            System.out.println(physics.getWidth());
-        }
-
-// Вычисляем давление
-        double pressure = physics.calculatePressure(dt);
-
 // Рассчитываем нагрев
         double dQ = heatPower * dt;
         totalHeatInput += dQ;
@@ -179,7 +171,7 @@ public class Main extends ApplicationAdapter {
 
       // --- Динамика частиц ---
 
-      pressure = physics.calculatePressure(dt);
+      double pressure = physics.calculatePressure(dt);
       double curTemp = physics.calcTemp();
       double area = physics.calcArea();
       try {
@@ -230,7 +222,9 @@ public class Main extends ApplicationAdapter {
       curTemp = physics.calcTemp();
       double deltaU = physics.calcMole() * physics.getR() * (curTemp - lastTemp);
       double work = config.vessel.wallVelocity() * dt * config.vessel.height() * pressure;
-      System.out.println("DeltaU: " + deltaU + " Work: " + work);
+      totalDeltaU += deltaU;
+      totalWork += work;
+      System.out.println("Q: " + totalHeatInput + " DeltaU: " + totalDeltaU + " Work: " + totalWork);
 
       // Фаза 2: изотермическое расширение — поддерживаем температуру около targetTemp
       //                if (beginToIncreaseArea && !beginCompression) {
